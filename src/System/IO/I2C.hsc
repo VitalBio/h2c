@@ -7,6 +7,7 @@ module System.IO.I2C
   , I2CFunctionality(..)
   , getI2CFunctionality
   , I2CTransaction()
+  , I2CAddress
   , writeToSlave
   , readFromSlave
   , runI2CTransaction
@@ -70,6 +71,8 @@ getI2CFunctionality (I2Cfd {..}) = runResourceT $ do
 
 type UnsignedLongHSC = #{type unsigned long}
 type IntHSC = #{type int}
+
+type I2CAddress = #{type long}
 
 #{enum Word16, , I2C_M_TEN, I2C_M_RD, I2C_M_NOSTART, I2C_M_REV_DIR_ADDR, I2C_M_IGNORE_NAK, I2C_M_NO_RD_ACK }
 #{enum UnsignedLongHSC, , I2C_SLAVE, I2C_TENBIT, I2C_PEC, I2C_FUNCS, I2C_RDWR }
