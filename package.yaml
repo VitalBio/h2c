@@ -1,0 +1,20 @@
+name: h2c
+version: '0.1.0.0'
+category: System
+author: Edward Amsden
+maintainer: edwardamsden@gmail.com
+copyright: 2017 Edward Amsden
+license: MIT
+extra-source-files:
+- README.md
+library:
+  source-dirs: src
+  include-dirs: cfiles
+  exposed-modules:
+  - System.IO.I2C
+  dependencies:
+  - base >=4.7 && <5
+  - bytestring
+  - mtl
+  - resourcet
+
