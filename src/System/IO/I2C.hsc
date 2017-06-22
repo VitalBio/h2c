@@ -167,8 +167,8 @@ runI2CTransaction (I2Cfd {..}) transaction = runResourceT $ do
       index <- get
       modify succ -- bump the index
       let thisMessagePtr = plusPtr ptr $ index * #{size i2c_msg_t} 
-      buffer <- liftIO $ #{peek i2c_msg_t, buf} ptr
-      len <- liftIO $ #{peek i2c_msg_t, len} ptr -- sanity check
+      buffer <- liftIO $ #{peek i2c_msg_t, buf} thisMessagePtr
+      len <- liftIO $ #{peek i2c_msg_t, len} thisMessagePtr -- sanity check
       if len /= length then liftIO $ error "Read length not equal to requested length" else return ()
       liftIO $ ByteString.packCStringLen (buffer, fromIntegral len)
     reassembleI2CMessagesFromTransaction ptr (Apply f x) =
