@@ -112,6 +112,7 @@ runI2CTransaction (I2Cfd {..}) transaction = runResourceT $ do
   (_, messagesPtr) <-
     allocate (mallocBytes $ #{size i2c_msg_t} * messageCount) free
   liftIO $ #{poke i2c_rdwr_ioctl_data_t, msgs} rdwrPtr messagesPtr 
+  liftIO $ #{poke i2c_rdwr_ioctl_data_t, nmsgs} rdwrPtr messageCount
   forM (zip i2CMessages [0..])
     (\(message, index) ->
       either
