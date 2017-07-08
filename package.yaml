@@ -4,12 +4,15 @@ category: System
 author: Edward Amsden
 maintainer: edwardamsden@gmail.com
 copyright: 2017 Edward Amsden
+synopsis: "Bindings to Linux I2C with support for repeated-start transactions."
+description: "H2C is a high-level binding to the Linux I2C subsystem with support for repeated-start transactions, not just individual reads and writes."
 license: MIT
 git: https://bitbucket.org/fmapE/h2c.git
 homepage: https://bitbucket.org/fmapE/h2c
 bug-reports: https://bitbucket.org/fmapE/h2c/issues
 extra-source-files:
 - README.md
+- cfiles/typedefs.h
 library:
   source-dirs: src
   include-dirs: cfiles
