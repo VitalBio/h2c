@@ -1,10 +1,13 @@
 name: h2c
-version: '0.1.0.0'
+version: '1.0.0'
 category: System
 author: Edward Amsden
 maintainer: edwardamsden@gmail.com
 copyright: 2017 Edward Amsden
 license: MIT
+git: https://bitbucket.org/fmapE/h2c.git
+homepage: https://bitbucket.org/fmapE/h2c
+bug-reports: https://bitbucket.org/fmapE/h2c/issues
 extra-source-files:
 - README.md
 library:

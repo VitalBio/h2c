@@ -2,10 +2,16 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RecordWildCards #-}
 module System.IO.I2C
-  ( I2Cfd()
+  ( 
+    -- * I2C bus handles
+    -- $bushandles
+    I2Cfd()
   , openI2Cfd
+    -- * Checking I2C functionality
   , I2CFunctionality(..)
   , getI2CFunctionality
+    -- * Reading and writing an I2C bus
+    -- $readwrite
   , I2CTransaction()
   , I2CAddress
   , writeToSlave
@@ -41,6 +47,17 @@ foreign import ccall "open" c_open :: Ptr CChar -> #{type int} -> IO #{type int}
 foreign import ccall "close" c_close :: #{type int} -> IO #{type int}
 foreign import ccall "ioctl" c_ioctl_ptr :: #{type int} -> #{type unsigned long} -> Ptr () -> IO #{type int}
 
+-- $bushandles
+-- To do any operations on an I2C bus we need a way to reference it.
+-- 
+-- Values of type 'I2Cfd' point to I2C busses.
+-- Opening a bus is done with the 'openI2Cfd' function, which is in the 'ResourceT' monad.
+-- This ensures that the resource is properly closed whether we exit via error or by completion.
+-- All operations using a handle should be done within the same call to 'runResourceT' where the handle is allocated,
+-- using 'liftIO' to lift IO operations to 'ResourceT'.
+--
+-- When the enclosing call to 'runResourceT' terminates, the 'I2Cfd' will be closed.
+
 -- | A handle to an I2C bus
 newtype I2Cfd = I2Cfd { i2cFD :: #{type int} }
 
@@ -72,6 +89,29 @@ getI2CFunctionality (I2Cfd {..}) = runResourceT $ do
 type UnsignedLongHSC = #{type unsigned long}
 type IntHSC = #{type int}
 
+-- $readwrite
+-- I2C supports sequences of writes and reads using what is called "repeated start."
+-- Every write or read begins with the master (the computer controlling the bus) issuing a START condition on the bus.
+-- The master will then send the address of the slave it wishes to read from or write to.
+-- Once the master has then sent the value to be written or the slave has sent the value to be read, the master will generally issue a STOP condition on the bus.
+--
+-- "Repeated start" groups several reads and writes together before a STOP. Before each read or write, the master will issue the START condition and send the address of
+-- the slave it wishes to read or write. Once the master or slave has sent the data to be written or read, the master will issue another START condition, rather than a STOP,
+-- and another address and read/write bit. Several such actions may be chained together before a stop.
+--
+-- Many I2C devices support writing to and reading from registers.
+-- Registers have addresses, allowing the master to specify which parameter of the device it wishes to read or write.
+-- Reading a register typically involves a repeated start transaction (a group of reads and writes taking place without an intervening STOP)
+-- where the master first writes the the register number it wishes to read to the slave, and then reads from the slave. Several starts with the read bit set to a slave
+-- often signal the slave to send several sequential registers, beginning with the register written at the beginning of the transaction.
+--
+-- Similarly, register writes generally involve a write of the register number, a repeated start, and then a write of the value to write to the register.
+--
+-- The 'I2CTransaction' type describes an arbitrary sequence of reads and writes in one repeated-start transaction.
+-- It is an instance of 'Applicative', which permits us to sequence reads and writes and combine multiple read values using arbitrary functions.
+-- However, it is not an instance of 'Monad', as we do not permit further read or write actions in the same transaction to depend on the result of a previous read.
+
+-- | The type of an address for an I2C slave.
 type I2CAddress = #{type long}
 
 #{enum Word16, , I2C_M_TEN, I2C_M_RD, I2C_M_NOSTART, I2C_M_REV_DIR_ADDR, I2C_M_IGNORE_NAK, I2C_M_NO_RD_ACK }
@@ -96,15 +136,24 @@ instance Applicative I2CTransaction where
   (<*>) = Apply
 
 -- | A master->slave write in a transaction
-writeToSlave :: #{type long} -> ByteString -> I2CTransaction ()
+writeToSlave 
+  :: I2CAddress -- ^ The address of the slave
+  -> ByteString  -- ^ The sequence of bytes to write
+  -> I2CTransaction ()
 writeToSlave address bytestring = Write address bytestring
 
--- A slave->master read in a transaction
-readFromSlave :: #{type long} -> #{type __u16} -> I2CTransaction ByteString
+-- | A slave->master read in a transaction
+readFromSlave
+  :: I2CAddress  -- ^ The address of the slave
+  -> #{type __u16} -- ^ The number of bytes to read
+  -> I2CTransaction ByteString
 readFromSlave address length = Read address length
 
--- | Run an i2c repeated-start transaction
-runI2CTransaction :: I2Cfd -> I2CTransaction a -> IO a
+-- | Run an I2C repeated-start transaction
+runI2CTransaction
+  :: I2Cfd -- ^ The bus to run the transaction on
+  -> I2CTransaction a -- ^ The transaction to run
+  -> IO a
 runI2CTransaction (I2Cfd {..}) transaction = runResourceT $ do
   let messageCount = length i2CMessages
   (_, rdwrPtr) <-
