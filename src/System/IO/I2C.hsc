@@ -35,6 +35,7 @@ import           Foreign.Marshal.Utils
 import           Foreign.Ptr
 import           Foreign.Storable
 
+#include <linux/i2c.h>
 #include <linux/i2c-dev.h>
 #include <fcntl.h>
 #include <sys/types.h>
